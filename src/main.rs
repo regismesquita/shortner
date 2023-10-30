@@ -1,18 +1,16 @@
-mod db;
 mod actions;
+mod db;
 mod routes;
 
 pub use actions::*;
-pub use routes::*;
 pub use db::{load_db, persist_db, Db};
-use warp::{Filter};
-
+pub use routes::*;
+use warp::Filter;
 
 #[tokio::main]
 async fn main() {
     // Setup subscriber
     tracing_subscriber::fmt::init();
-
     // Create Database
     let db = load_db().await;
 
@@ -23,21 +21,26 @@ async fn main() {
     let stats = stats_route(&db);
     let create_alias = create_alias_route(&db);
     let view_data = view_data_route(db);
+    let favicon = favicon_route();
+    let index = index_route();
 
     // Define routes and start server
-    let routes = stats.or(create_alias).or(view_data);
+    let routes = stats.or(favicon).or(index).or(create_alias).or(view_data);
+
     warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Mutex, Arc};
     use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
     #[tokio::test]
     async fn test_create_alias() {
         let db: Db = Arc::new(Mutex::new(HashMap::new()));
-        let test_request = CreateAliasRequest { url: "https://google.com".to_string() };
+        let test_request = CreateAliasRequest {
+            url: "https://google.com".to_string(),
+        };
 
         let resp = warp::test::request()
             .method("POST")
@@ -54,10 +57,9 @@ mod tests {
         //create a db
         let db: Db = Arc::new(Mutex::new(HashMap::new()));
 
-        db.lock().unwrap().insert(
-            "test".to_string(),
-            ("https://google.com".to_string(), 4)
-        );
+        db.lock()
+            .unwrap()
+            .insert("test".to_string(), ("https://google.com".to_string(), 4));
 
         let resp = warp::test::request()
             .method("GET")
@@ -68,15 +70,13 @@ mod tests {
         assert_eq!(resp.status(), 307);
     }
 
-
     #[tokio::test]
     async fn test_get_stats() {
         //create a db
         let db: Db = Arc::new(Mutex::new(HashMap::new()));
-        db.lock().unwrap().insert(
-            "test".to_string(),
-            ("https://google.com".to_string(), 4)
-        );
+        db.lock()
+            .unwrap()
+            .insert("test".to_string(), ("https://google.com".to_string(), 4));
 
         let resp = warp::test::request()
             .method("GET")

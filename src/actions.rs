@@ -1,10 +1,10 @@
 use crate::db;
 use db::Db;
 
-use std::str::FromStr;
-use tracing::{info, error};
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
+use std::str::FromStr;
+use tracing::{error, info};
 
 #[derive(Serialize)]
 pub struct Stats {
@@ -16,7 +16,10 @@ pub async fn stats(db: Db) -> Result<impl warp::Reply, warp::Rejection> {
     let lock = db.lock().unwrap();
     let stats: Vec<_> = lock
         .iter()
-        .map(|(alias, (_, count))| Stats { alias: alias.clone(), count: *count })
+        .map(|(alias, (_, count))| Stats {
+            alias: alias.clone(),
+            count: *count,
+        })
         .collect();
 
     Ok(warp::reply::json(&stats))
@@ -35,10 +38,15 @@ pub async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, 
     }
 }
 
-#[derive(Deserialize)]
-#[derive(Serialize)]
-pub struct CreateAliasRequest { pub url: String }
-pub async fn create_alias(alias: String, req: CreateAliasRequest, db: Db) -> Result<(), warp::Rejection> {
+#[derive(Deserialize, Serialize)]
+pub struct CreateAliasRequest {
+    pub url: String,
+}
+pub async fn create_alias(
+    alias: String,
+    req: CreateAliasRequest,
+    db: Db,
+) -> Result<(), warp::Rejection> {
     let mut lock = db.lock().unwrap();
     if lock.contains_key(&alias) {
         return Err(warp::reject::not_found());
@@ -55,7 +63,9 @@ pub async fn view_data(alias: String, db: Db) -> Result<impl warp::Reply, warp::
         if *count % 1000 == 0 {
             info!("{} ({}) reached {} views!", alias, url, count);
         }
-        return Ok(Box::new(warp::redirect::temporary(warp::http::Uri::from_str(url).unwrap())));
+        return Ok(Box::new(warp::redirect::temporary(
+            warp::http::Uri::from_str(url).unwrap(),
+        )));
     }
     Err(warp::reject::not_found())
 }

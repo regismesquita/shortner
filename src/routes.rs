@@ -3,12 +3,11 @@ use db::Db;
 
 use crate::actions;
 use actions::*;
-use warp::{Reply,Filter};
 use warp::hyper::StatusCode;
-
+use warp::{Filter, Reply};
 
 pub fn stats_route(db: &Db) -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
-// Define /stats route
+    // Define /stats route
     let db_stats = db.clone();
     warp::path("stats")
         .and(warp::get())
@@ -16,8 +15,10 @@ pub fn stats_route(db: &Db) -> impl Filter<Extract = impl Reply, Error = warp::R
         .and_then(stats)
 }
 
-pub fn view_data_route(db: Db) -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
-// Define /<alias> GET route
+pub fn view_data_route(
+    db: Db,
+) -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
+    // Define /<alias> GET route
     let db_view_data = db.clone();
     warp::path::param::<String>()
         .and(warp::get())
@@ -26,8 +27,22 @@ pub fn view_data_route(db: Db) -> impl Filter<Extract = impl Reply, Error = warp
         .recover(handle_rejection)
 }
 
-pub fn create_alias_route(db: &Db) -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
-// Define /<alias> POST route
+pub fn favicon_route() -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
+    warp::path("favicon.ico")
+        .and(warp::get())
+        .and(warp::fs::file("./bin/6103.ico"))
+}
+
+pub fn index_route() -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
+    warp::path::end()
+        .and(warp::get())
+        .map(|| "Nothing to see here")
+}
+
+pub fn create_alias_route(
+    db: &Db,
+) -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
+    // Define /<alias> POST route
     let db_create_alias = db.clone();
     warp::path::param::<String>()
         .and(warp::post())
@@ -36,4 +51,3 @@ pub fn create_alias_route(db: &Db) -> impl Filter<Extract = impl Reply, Error = 
         .and_then(create_alias)
         .map(|_| warp::reply::with_status("Created", StatusCode::CREATED))
 }
-
